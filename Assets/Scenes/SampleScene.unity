@@ -287,9 +287,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f27271c96bd5a024cb1428d60dc248ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshFilter: {fileID: 0}
-  mesh: {fileID: 0}
-  material: {fileID: 0}
+  material: {fileID: 2100000, guid: edd902f24e81b254aaf4675fd595fa3e, type: 2}
+  Settler: {fileID: 8033712005450140572, guid: c62141d7907514c43af485d6d65b3ed0, type: 3}
 --- !u!4 &381388201
 Transform:
   m_ObjectHideFlags: 0
@@ -299,7 +298,7 @@ Transform:
   m_GameObject: {fileID: 381388199}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0}
+  m_LocalPosition: {x: -0.5, y: -0.5, z: -0.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

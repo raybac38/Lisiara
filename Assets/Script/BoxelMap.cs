@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 
 public class BoxelMap : MonoBehaviour
 {
@@ -10,12 +11,12 @@ public class BoxelMap : MonoBehaviour
     static private Vector3Int mapSize = new Vector3Int(255, 125, 255);
     [SerializeField]
     private bool[,,] map = new bool[mapSize.x, mapSize.y, mapSize.z];
-    [SerializeField]
-    private MeshFilter meshFilter;
-    [SerializeField]
+    private MeshRenderer meshRenderer;
     private Mesh mesh;
     [SerializeField]
     private Material material;
+    [SerializeField]
+    private GameObject Settler;
 
     private static readonly Vector3[] faceNormals = new Vector3[]
     {
@@ -54,7 +55,6 @@ public class BoxelMap : MonoBehaviour
     new Vector2(1, 1),
     new Vector2(0, 1)
     };
-
 
     /// <summary>
     /// Generate the mesh from the map
@@ -117,6 +117,8 @@ public class BoxelMap : MonoBehaviour
         mesh.RecalculateBounds();
 
         GetComponent<MeshFilter>().mesh = mesh;
+
+        SpawnEntityOnSurface(new Vector2Int(25, 25));
     }
 
     private bool IsInsideMap(Vector3Int pos)
@@ -125,13 +127,33 @@ public class BoxelMap : MonoBehaviour
                pos.x < mapSize.x && pos.y < mapSize.y && pos.z < mapSize.z;
     }
 
+    private void SpawnEntityOnSurface(Vector2Int coordinate)
+    {
+        for (int y = mapSize.y - 1; y > 1; y--)
+        {
+            if (map[coordinate.x, y - 1 , coordinate.y])
+            {
+                GameObject gameObject = Instantiate(Settler);
+                gameObject.transform.position = new Vector3(coordinate.x, y , coordinate.y);
+                return;
+            }
+        }
+
+    }
+
 
 
     void Start()
     {
+        this.meshRenderer = GetComponent<MeshRenderer>();
+
         MapBuilder mapBuilder = new MapBuilder();
         this.map = mapBuilder.Generate(mapSize);
         GenerateMesh();
+        meshRenderer.material = this.material;
+
+        Pathfiding pathfiding = new Pathfiding();
+        pathfiding.GeneratePathMap(map);
     }
 
     // Update is called once per frame
