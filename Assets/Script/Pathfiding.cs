@@ -11,7 +11,7 @@ public class Pathfiding
     /// <param name="map"></param>
     public void GeneratePathMap(bool[,,] mapData)
     {
-        Vector3Int mapSize = new Vector3Int(mapData.GetLength(0), mapData.GetLength(1), mapData.GetLength(2));
+        Vector3Int mapSize = new(mapData.GetLength(0), mapData.GetLength(1), mapData.GetLength(2));
 
         /// Generate all Node
         for (int x = 0; x < mapSize.x; x++)
@@ -34,8 +34,8 @@ public class Pathfiding
     }
     class Node
     {
-        private Vector3Int coordinate;
-        readonly List<Node> neighbor = new List<Node>();
+        public readonly Vector3Int coordinate;
+        public readonly List<Node> neighbor = new List<Node>();
 
         public Node(Vector3Int coordinate)
         {
@@ -46,18 +46,18 @@ public class Pathfiding
         {
 
             Vector3Int[] offsets = new Vector3Int[] {
-                new Vector3Int(1,0,0),
-                new Vector3Int(-1,0,0),
-                new Vector3Int(0,0,1),
-                new Vector3Int(0,0,-1),
-                new Vector3Int(1,1,0),
-                new Vector3Int(-1,1,0),
-                new Vector3Int(0,1,1),
-                new Vector3Int(0,1,-1),
-                new Vector3Int(1,-1,0),
-                new Vector3Int(-1,-1,0),
-                new Vector3Int(0,-1,1),
-                new Vector3Int(0,-1,-1),
+                new(1,0,0),
+                new(-1,0,0),
+                new(0,0,1),
+                new(0,0,-1),
+                new(1,1,0),
+                new(-1,1,0),
+                new(0,1,1),
+                new(0,1,-1),
+                new(1,-1,0),
+                new(-1,-1,0),
+                new(0,-1,1),
+                new(0,-1,-1),
             };
             neighbor.Clear();
 
@@ -67,6 +67,16 @@ public class Pathfiding
                 bool succes = pathMap.TryGetValue(coordinate + offset, out node);
                 if (succes) neighbor.Add(node);
             }
+        }
+
+        public override int GetHashCode()
+        {
+            return coordinate.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Node node && coordinate.Equals(node.coordinate);
         }
     }
 
@@ -91,4 +101,82 @@ public class Pathfiding
         bool isAirAtHead = !mapData[x, y + 1, z];
         return isGroundBelow && isAirAtFeet && isAirAtHead;
     }
+
+
+    public bool AStar(Vector3Int startingCoordinate, Vector3Int endingCoordinate, out List<Vector3Int> path)
+    {
+        path = new List<Vector3Int>();
+
+        if (startingCoordinate.Equals(endingCoordinate))
+        {
+            path.Add(startingCoordinate);
+            return true;
+        }
+
+        Dictionary<Node, float> nodeCost = new Dictionary<Node, float>();
+        Dictionary<Node, Node> parent = new Dictionary<Node, Node>();
+        HashSet<Node> closedList = new HashSet<Node>();
+        PriorityQueue<Node> openList = new PriorityQueue<Node>();
+
+        Node startNode;
+        bool isStartingNodeValid = pathMap.TryGetValue(startingCoordinate, out startNode);
+        bool isEndingNodeValid = pathMap.ContainsKey(endingCoordinate);
+
+        if (!isStartingNodeValid || !isEndingNodeValid)
+        {
+            Debug.LogWarning("Starting or ending node not found");
+            return false;
+        }
+
+        openList.Enqueue(startNode, 0f);
+        nodeCost[startNode] = 0f;
+
+        while (openList.Count > 0)
+        {
+            Node current = openList.Dequeue();
+
+            if (closedList.Contains(current))
+                continue;
+
+            closedList.Add(current);
+
+            if (current.coordinate == endingCoordinate)
+            {
+                // Reconstruire le chemin
+                path.Add(current.coordinate);
+                while (parent.ContainsKey(current))
+                {
+                    current = parent[current];
+                    path.Add(current.coordinate);
+                }
+                path.Reverse();
+                return true;
+            }
+
+            float currentCost = nodeCost[current];
+
+            foreach (Node neighbor in current.neighbor)
+            {
+                if (closedList.Contains(neighbor))
+                    continue;
+
+                float tentativeCost = currentCost + 1f; // ou distance réelle si besoin
+
+                bool visited = nodeCost.TryGetValue(neighbor, out float existingCost);
+                if (!visited || tentativeCost < existingCost)
+                {
+                    nodeCost[neighbor] = tentativeCost;
+                    parent[neighbor] = current;
+
+                    float heuristic = Vector3Int.Distance(neighbor.coordinate, endingCoordinate);
+                    float totalCost = tentativeCost + heuristic;
+                    openList.Enqueue(neighbor, totalCost);
+                }
+            }
+        }
+
+        // Aucun chemin trouvé
+        return false;
+    }
+
 }

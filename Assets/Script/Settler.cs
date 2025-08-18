@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class Settler : MonoBehaviour
 {
+    private readonly TaskExecutor executor = new();
+
+
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {

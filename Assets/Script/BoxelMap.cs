@@ -148,12 +148,20 @@ public class BoxelMap : MonoBehaviour
         this.meshRenderer = GetComponent<MeshRenderer>();
 
         MapBuilder mapBuilder = new MapBuilder();
-        this.map = mapBuilder.Generate(mapSize);
+        this.map = mapBuilder.GenerateSuperflat(mapSize, 5);
         GenerateMesh();
         meshRenderer.material = this.material;
 
         Pathfiding pathfiding = new Pathfiding();
         pathfiding.GeneratePathMap(map);
+
+        List<Vector3Int> path = null;
+        bool succes = pathfiding.AStar(new(50, 5, 50), new(60, 5, 60), out path);
+        foreach (Vector3Int p in path)
+        {
+            Debug.Log(p);
+        }
+
     }
 
     // Update is called once per frame
