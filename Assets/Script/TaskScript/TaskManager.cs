@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,19 +13,38 @@ using UnityEngine;
 public class TaskManager
 {
     private List<Task> taskList = new ();
-    private List<Settler> idleSettles = new();
+    private List<TaskExecutor> idleTaskExecutor = new();
 
     public void PostNewTask(Task task)
     {
         taskList.Add(task);
     }
 
-    public void MarkAsIdle(Settler settler)
+    public void TaskAborted(Task task)
     {
-        idleSettles.Add(settler);
+        throw new NotImplementedException("TaskManager TaskAborted is not implemented yet");
+    }
+
+    public void RemoveTask(Task task)
+    {
+        throw new NotImplementedException("TaskManager RemoveTask is not implemented yet");
+    }
+
+    public void MarkAsIdle(TaskExecutor taskExecutor)
+    {
+        idleTaskExecutor.Add(taskExecutor);
         if(taskList.Count == 0)
         {
-            Task taks = new IdleTask(this, settler, 1f);
+            Task task = new WanderingTask(this);
+            taskExecutor.AssigneTask(task);
+            Debug.Log("No task to assigne. Putting to Idle");
+        }
+        else
+        {
+            Task task = taskList[0];
+            taskList.RemoveAt(0);
+            taskExecutor.AssigneTask(task);
+            Debug.Log("Task assignated");
         }
     }
 }

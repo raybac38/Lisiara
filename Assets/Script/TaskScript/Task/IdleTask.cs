@@ -2,15 +2,20 @@ using UnityEngine;
 
 public class IdleTask : Task
 {
-    private readonly float timer;
-    public IdleTask(TaskManager manager, Settler owner, float timer) : base(manager, owner)
+    private readonly float duration;
+    private float timer = 0f;
+    
+    public IdleTask(TaskManager manager, float duration) : base(manager)
     {
-        this.timer = timer;
+        this.duration = duration;
     }
 
-    public override float NextStep()
+    public override void NextStep(Settler settler)
     {
-        isFinished = true;
-        return timer;
+        timer += Time.deltaTime;
+        if(timer >= duration)
+        {
+            isFinished = true;
+        }
     }
 }

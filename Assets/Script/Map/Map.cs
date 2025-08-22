@@ -5,18 +5,22 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
 
-public class BoxelMap : MonoBehaviour
+public class Map : MonoBehaviour
 {
     [SerializeField]
-    static private Vector3Int mapSize = new Vector3Int(255, 125, 255);
+    static private Vector3Int mapSize = new Vector3Int(512, 125, 512);
     [SerializeField]
     private bool[,,] map = new bool[mapSize.x, mapSize.y, mapSize.z];
+    [SerializeField]
     private MeshRenderer meshRenderer;
     private Mesh mesh;
     [SerializeField]
     private Material material;
     [SerializeField]
-    private GameObject Settler;
+    private GameObject settler;
+
+    public Pathfiding Pathfiding { get; } = new Pathfiding();
+
 
     private static readonly Vector3[] faceNormals = new Vector3[]
     {
@@ -118,7 +122,6 @@ public class BoxelMap : MonoBehaviour
 
         GetComponent<MeshFilter>().mesh = mesh;
 
-        SpawnEntityOnSurface(new Vector2Int(25, 25));
     }
 
     private bool IsInsideMap(Vector3Int pos)
@@ -127,46 +130,35 @@ public class BoxelMap : MonoBehaviour
                pos.x < mapSize.x && pos.y < mapSize.y && pos.z < mapSize.z;
     }
 
-    private void SpawnEntityOnSurface(Vector2Int coordinate)
+    public int GetSurfaceY(Vector2Int coordinate)
     {
-        for (int y = mapSize.y - 1; y > 1; y--)
-        {
+        coordinate.x = ((coordinate.x % mapSize.x) + mapSize.x) % mapSize.x;
+        coordinate.y = ((coordinate.y % mapSize.z) + mapSize.z) % mapSize.z;
+        for (int y = mapSize.y - 1; y > 1; y--) { 
             if (map[coordinate.x, y - 1 , coordinate.y])
             {
-                GameObject gameObject = Instantiate(Settler);
-                gameObject.transform.position = new Vector3(coordinate.x, y , coordinate.y);
-                return;
+                return y;
             }
         }
-
+        return -1;
     }
 
-
-
-    void Start()
+    private void Awake()
     {
-        this.meshRenderer = GetComponent<MeshRenderer>();
+        MapBuilder mapBuilder = new ();
+        Debug.Log("start generating map");
+        map = mapBuilder.GenerateProceduralMap(mapSize);
+        Debug.Log("stop generating map");
+        Debug.Log("start generating mesh");
 
-        MapBuilder mapBuilder = new MapBuilder();
-        this.map = mapBuilder.GenerateSuperflat(mapSize, 5);
         GenerateMesh();
-        meshRenderer.material = this.material;
+        Debug.Log("stop generating mesh");
 
-        Pathfiding pathfiding = new Pathfiding();
-        pathfiding.GeneratePathMap(map);
+        meshRenderer.material = material;
+        Debug.Log("start generating path");
 
-        List<Vector3Int> path = null;
-        bool succes = pathfiding.AStar(new(50, 5, 50), new(60, 5, 60), out path);
-        foreach (Vector3Int p in path)
-        {
-            Debug.Log(p);
-        }
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
+        Pathfiding.GeneratePathMap(map);
+        Debug.Log("stop generating path");
 
     }
 }

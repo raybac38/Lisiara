@@ -9,9 +9,8 @@ public abstract class Task
     /// Assigne the task to the Settler
     /// </summary>
     /// <param name="owner"></param>
-    public Task(TaskManager manager, Settler owner)
+    public Task(TaskManager manager)
     {
-        this.owner = owner;
         this.manager = manager;
     }
     /// <summary>
@@ -21,8 +20,7 @@ public abstract class Task
     /// <summary>
     /// Execute the next step for the current task
     /// </summary>
-    /// <returns>Time in second about the duration of this step</returns>
-    public abstract float NextStep();
+    public abstract void NextStep(Settler settler);
 
 
 }

@@ -3,7 +3,11 @@ using UnityEngine;
 
 public class Pathfiding
 {
-    private Dictionary<Vector3Int, Node> pathMap = new Dictionary<Vector3Int, Node>();
+    public static Pathfiding pathfiding;
+
+
+
+    private readonly Dictionary<Vector3Int, Node> pathMap = new();
 
     /// <summary>
     /// Generate the initial pathmap from the map data
@@ -30,7 +34,7 @@ public class Pathfiding
             }
         }
         RefreshAllNodeLink(pathMap);
-
+        pathfiding = this;
     }
     class Node
     {
@@ -160,7 +164,7 @@ public class Pathfiding
                 if (closedList.Contains(neighbor))
                     continue;
 
-                float tentativeCost = currentCost + 1f; // ou distance réelle si besoin
+                float tentativeCost = currentCost + 1f;
 
                 bool visited = nodeCost.TryGetValue(neighbor, out float existingCost);
                 if (!visited || tentativeCost < existingCost)
