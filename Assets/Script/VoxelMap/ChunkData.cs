@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Chunk
+public class ChunkData
 {
     private const float perlinNoiseMapScale = 0.015f;
     private const float perlinNoiseStrenght = 25f;
@@ -9,12 +9,10 @@ public class Chunk
     private readonly Vector3Int chunkPosition;
     private readonly Voxel[,,] chunkVoxels = new Voxel[chunkSize.x, chunkSize.y, chunkSize.z];
 
-    public Chunk(Vector3Int chunkPosition)
+    public ChunkData(Vector3Int chunkPosition)
     {
         this.chunkPosition = chunkPosition;
     }
-
-    
 
     private Vector3Int RelativeToAbsolutCoordinate(Vector3Int relative)
     {
