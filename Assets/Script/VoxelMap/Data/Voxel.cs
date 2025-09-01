@@ -2,14 +2,14 @@ using System;
 using UnityEngine;
 
 [Flags]
-enum VoxelType : byte
+public enum VoxelType : byte
 {
     Air,
     Stone,
     Grass
 }
 
-struct Voxel
+public struct Voxel
 {
     public VoxelType type;
 }

@@ -5,9 +5,9 @@ public class ChunkData
     private const float perlinNoiseMapScale = 0.015f;
     private const float perlinNoiseStrenght = 25f;
     private const float mapWaterLevel = 50f;
-    static private Vector3Int chunkSize = new(32, 32, 32);
+    private readonly Vector3Int chunkSize = MapData.chunkSize;
     private readonly Vector3Int chunkPosition;
-    private readonly Voxel[,,] chunkVoxels = new Voxel[chunkSize.x, chunkSize.y, chunkSize.z];
+    private readonly Voxel[,,] chunkVoxels = new Voxel[MapData.chunkSize.x, MapData.chunkSize.y, MapData.chunkSize.z];
 
     public ChunkData(Vector3Int chunkPosition)
     {
@@ -35,5 +35,9 @@ public class ChunkData
                 }
             }
         }
+    }
+
+    public Voxel GetLocalVoxel(int x, int y, int z) { 
+        return chunkVoxels[x,y,z];
     }
 }
