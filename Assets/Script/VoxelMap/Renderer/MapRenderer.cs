@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class MapRenderer : MonoBehaviour
 {
+    public Material defaultMaterial;
+    public static Material defaultStaticMaterial;
     [SerializeField]
     private MapData mapData;
 
@@ -9,6 +11,11 @@ public class MapRenderer : MonoBehaviour
     private Map map;
 
     private ChunkRenderer[,,] chunkRenderers;
+
+    private void Awake()
+    {
+        defaultStaticMaterial = defaultMaterial;
+    }
 
     private void Start()
     {
@@ -20,7 +27,7 @@ public class MapRenderer : MonoBehaviour
             {
                 for (int z = 0; z < MapData.mapSize.z; z++)
                 {
-                    GameObject chunk = new GameObject(string.Format("Chunk ", x, ":", y, ":", z));
+                    GameObject chunk = new (string.Format("Chunk ", x, ":", y, ":", z));
                     ChunkRenderer chunkRenderer = chunk.AddComponent<ChunkRenderer>();
                     chunkRenderers[x, y, z] = chunkRenderer; 
                     chunkRenderer.mapData = mapData;

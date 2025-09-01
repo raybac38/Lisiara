@@ -122,6 +122,7 @@ public class ChunkRenderer : MonoBehaviour
         mesh.RecalculateNormals();
 
         meshFilter.mesh = mesh;
+        renderer.material = MapRenderer.defaultStaticMaterial;
     }
 
 }
