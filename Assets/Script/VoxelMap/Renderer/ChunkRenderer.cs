@@ -21,7 +21,7 @@ public class ChunkRenderer : MonoBehaviour
 
     private void Awake()
     {
-        mesh = new Mesh();
+        mesh = new();
         mesh.name = gameObject.name;
         renderer = GetComponent<MeshRenderer>();
         if (renderer == null)
@@ -44,13 +44,18 @@ public class ChunkRenderer : MonoBehaviour
         bool[,] mask = new bool[xmax, zmax];
         for (int y = 0; y < ymax; y++)
         {
+            bool containVisibleFace = false;
             for (int x = 0; x < xmax; x++)
             {
                 for (int z = 0; z < zmax; z++)
                 {
-                    mask[x, z] = IsFaceVisible(new Vector3Int(x, y, z), Vector3Int.up);
+                    bool isVisible = IsFaceVisible(new Vector3Int(x, y, z), Vector3Int.up);
+                    mask[x, z] = isVisible;
+                    containVisibleFace |= isVisible;
                 }
             }
+
+            if (!containVisibleFace) continue;
 
             for (int x = 0; x < xmax; x++)
             {
