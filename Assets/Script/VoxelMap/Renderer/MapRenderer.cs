@@ -32,7 +32,7 @@ public class MapRenderer : MonoBehaviour
                     chunkRenderers[x, y, z] = chunkRenderer; 
                     chunkRenderer.mapData = mapData;
                     chunkRenderer.chunkPosition = new Vector3Int(x, y, z);
-                    chunk.transform.position = Vector3.zero;
+                    chunk.transform.position = new Vector3(x * MapData.chunkSize.x, y * MapData.chunkSize.y, z * MapData.chunkSize.z);
                     chunkRenderer.GenerateMesh();
                 }
             }

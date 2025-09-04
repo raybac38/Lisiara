@@ -1,9 +1,8 @@
-using NUnit.Framework.Internal;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Rendering;
 
-public class ChunkRenderer : MonoBehaviour 
+public class ChunkRenderer : MonoBehaviour
 {
     private Mesh mesh;
     private MeshFilter meshFilter;
@@ -12,30 +11,6 @@ public class ChunkRenderer : MonoBehaviour
     public Vector3Int chunkPosition;
 
     public MapData mapData;
-
-
-    private readonly Vector3Int[] Direction = {
-        Vector3Int.up, Vector3Int.down,
-        Vector3Int.left, Vector3Int.right,
-        Vector3Int.forward, Vector3Int.back,
-    };
-
-    private (Vector3Int first, Vector3Int second) GetPerpendicular(Vector3Int direction)
-    {
-        if (direction == Vector3Int.up || direction == Vector3Int.down)
-        {
-            return (Vector3Int.left, Vector3Int.forward);
-        }
-        if (direction == Vector3Int.left || direction == Vector3Int.right)
-        {
-            return (Vector3Int.up, Vector3Int.forward);
-        }
-        if (direction == Vector3Int.forward || direction == Vector3Int.back)
-        {
-            return (Vector3Int.up, Vector3Int.left);
-        }
-        throw new System.Exception("direction should be one of the six cardinal coordinate");
-    }
 
     private bool IsFaceVisible(Vector3Int relativePosition, Vector3Int faceNormal)
     {
@@ -60,62 +35,111 @@ public class ChunkRenderer : MonoBehaviour
         }
     }
 
+    private void GenerateTopFace(in List<Vector3> vertices,in List<int> triangles,in List<Vector2> uvs)
+    {
+        int xmax = MapData.chunkSize.x;
+        int ymax = MapData.chunkSize.y;
+        int zmax = MapData.chunkSize.z;
+
+        bool[,] mask = new bool[xmax, zmax];
+        for (int y = 0; y < ymax; y++)
+        {
+            for (int x = 0; x < xmax; x++)
+            {
+                for (int z = 0; z < zmax; z++)
+                {
+                    mask[x, z] = IsFaceVisible(new Vector3Int(x, y, z), Vector3Int.up);
+                }
+            }
+
+            for (int x = 0; x < xmax; x++)
+            {
+                for (int z = 0; z < zmax; z++)
+                {
+                    if (!mask[x, z]) continue;
+                    int startingx = x;
+                    int startingz = z;
+
+                    int endingx = x;
+                    int endingz = z;
+
+                    while (endingx < xmax && mask[endingx, endingz])
+                    {
+                        endingx++;
+                    }
+
+
+                    bool done = false;
+                    while (!done)
+                    {
+                        int newZ = endingz + 1;
+                        if (newZ >= zmax) break;
+
+                        for (int innerx = startingx; innerx < endingx; innerx++)
+                        {
+                            if (!mask[innerx, newZ])
+                            {
+                                done = true;
+                                break;
+                            }
+                        }
+
+                        if (!done)
+                        {
+                            endingz++;
+                        }
+                    }
+                    endingz++;
+
+                    for (int innerx = startingx; innerx < endingx; innerx++)
+                    {
+                        for (int innerz = startingz; innerz < endingz; innerz++)
+                        {
+                            mask[innerx, innerz] = false;
+                        }
+                    }
+
+                    Vector3 bottomLeft = new Vector3(startingx, y + 1, startingz);
+                    Vector3 bottomRight = new Vector3(endingx, y + 1, startingz);
+                    Vector3 topLeft = new Vector3(startingx, y + 1, endingz);
+                    Vector3 topRight = new Vector3(endingx, y + 1, endingz);
+
+                    int index = vertices.Count;
+
+                    vertices.Add(bottomLeft);
+                    vertices.Add(topLeft);
+                    vertices.Add(topRight);
+                    vertices.Add(bottomRight);
+
+                    triangles.Add(index);
+                    triangles.Add(index + 1);
+                    triangles.Add(index + 2);
+
+                    triangles.Add(index);
+                    triangles.Add(index + 2);
+                    triangles.Add(index + 3);
+
+                    uvs.Add(new Vector2(startingx, startingz));
+                    uvs.Add(new Vector2(endingx, startingz));
+                    uvs.Add(new Vector2(startingx, endingz));
+                    uvs.Add(new Vector2(endingx, endingz));
+                }
+            }
+        }
+    }
+
+
     public void GenerateMesh()
     {
         List<Vector3> vertices = new();
         List<int> triangles = new();
         List<Vector2> uvs = new();
 
-        int vertexIndex = 0;
 
-        foreach (Vector3Int faceNormal in Direction)
-        {
-            Vector3Int vec01, vec10;
-            (vec01, vec10) = GetPerpendicular(faceNormal);
-
-            for (int x = 0; x < MapData.chunkSize.x; x++)
-            {
-                for (int y = 0; y < MapData.chunkSize.y; y++)
-                {
-                    for (int z = 0; z < MapData.chunkSize.z; z++)
-                    {
-                        Vector3Int localPos = new(x, y, z);
-
-                        if (IsFaceVisible(localPos, faceNormal))
-                        {
-                            Vector3Int worldPos = localPos + chunkPosition * MapData.chunkSize;
-
-                            Vector3Int bottomLeft = worldPos;
-                            Vector3Int bottomRight = worldPos + vec10;
-                            Vector3Int topLeft = worldPos + vec01;
-                            Vector3Int topRight = worldPos + vec01 + vec10;
-
-                            vertices.Add(bottomLeft);
-                            vertices.Add(bottomRight);
-                            vertices.Add(topRight);
-                            vertices.Add(topLeft);
-
-                            triangles.Add(vertexIndex + 0);
-                            triangles.Add(vertexIndex + 1);
-                            triangles.Add(vertexIndex + 2);
-
-                            triangles.Add(vertexIndex + 2);
-                            triangles.Add(vertexIndex + 3);
-                            triangles.Add(vertexIndex + 0);
-
-                            uvs.Add(new Vector2(0, 0));
-                            uvs.Add(new Vector2(1, 0));
-                            uvs.Add(new Vector2(1, 1));
-                            uvs.Add(new Vector2(0, 1));
-
-                            vertexIndex += 4;
-                        }
-                    }
-                }
-            }
-        }
+        GenerateTopFace(vertices, triangles, uvs);          
 
         mesh.Clear();
+        mesh.indexFormat = IndexFormat.UInt32;
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.uv = uvs.ToArray();
@@ -124,5 +148,7 @@ public class ChunkRenderer : MonoBehaviour
         meshFilter.mesh = mesh;
         renderer.material = MapRenderer.defaultStaticMaterial;
     }
+
+
 
 }

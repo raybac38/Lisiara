@@ -4,7 +4,7 @@ using UnityEngine;
 public class MapData
 {
     static public readonly Vector3Int chunkSize = new(32, 32, 32);
-    static public readonly Vector3Int mapSize = new(8, 8, 8);
+    static public readonly Vector3Int mapSize = new(32, 4, 32);
     private ChunkData[,,] loadedChunks;
 
     public MapData()
