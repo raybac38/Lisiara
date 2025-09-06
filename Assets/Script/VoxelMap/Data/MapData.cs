@@ -3,8 +3,26 @@ using UnityEngine;
 
 public class MapData
 {
+    /// <summary>
+    /// CHUNK SIZE NEED TO BE A POWER OF 2 FOR EFFICIENCY PURPOSE
+    /// </summary>
     static public readonly Vector3Int chunkSize = new(32, 32, 32);
+
+    private const int CHUNK_SIZE_X = 32; 
+    private const int CHUNK_SIZE_Y = 32;
+    private const int CHUNK_SIZE_Z = 32;
+
+    private const int CHUNK_SHIFT_X = 5; 
+    private const int CHUNK_SHIFT_Y = 5;
+    private const int CHUNK_SHIFT_Z = 5;
+
+    private const int CHUNK_MASK_X = CHUNK_SIZE_X - 1; 
+    private const int CHUNK_MASK_Y = CHUNK_SIZE_Y - 1;
+    private const int CHUNK_MASK_Z = CHUNK_SIZE_Z - 1;
+
+
     static public readonly Vector3Int mapSize = new(32, 4, 32);
+    //static public readonly Vector3Int mapSize = new(4, 4, 4);
     private ChunkData[,,] loadedChunks;
 
     public MapData()
@@ -27,30 +45,28 @@ public class MapData
 
     public Voxel GetVoxelData(int x, int y, int z)
     {
-        int chunkX = x / chunkSize.x;
-        int chunkY = y / chunkSize.y;
-        int chunkZ = z / chunkSize.z;
+        int chunkX = x >> CHUNK_SHIFT_X;
+        int chunkY = y >> CHUNK_SHIFT_Y;
+        int chunkZ = z >> CHUNK_SHIFT_Z;
 
-        Vector3Int chunkCoordinate = new(chunkX, chunkY, chunkZ);
-
-        if (IsOutside(chunkCoordinate))
+        if (IsOutside(chunkX,chunkY,chunkZ))
         {
             return new Voxel { type = VoxelType.Air };
         }
 
-        int localX = ((x % chunkSize.x) + chunkSize.x) % chunkSize.x;
-        int localY = ((y % chunkSize.y) + chunkSize.y) % chunkSize.y;
-        int localZ = ((z % chunkSize.z) + chunkSize.z) % chunkSize.z;
+        int localX = x & CHUNK_MASK_X;
+        int localY = y & CHUNK_MASK_Y;
+        int localZ = z & CHUNK_MASK_Z;
 
         return loadedChunks[chunkX, chunkY, chunkZ]
             .GetLocalVoxel(localX, localY, localZ);
     }
 
 
-    private bool IsOutside(Vector3Int chunkCoord)
+    private bool IsOutside(int x, int y, int z)
     {
-        return chunkCoord.x < 0 || chunkCoord.y < 0 || chunkCoord.z < 0 ||
-               chunkCoord.x >= mapSize.x || chunkCoord.y >= mapSize.y || chunkCoord.z >= mapSize.z;
+        return x < 0 || y < 0 || z < 0 ||
+               x >= mapSize.x || y >= mapSize.y || z >= mapSize.z;
     }
 
 }
