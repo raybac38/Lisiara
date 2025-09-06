@@ -5,9 +5,8 @@ public class ChunkData
     private const float perlinNoiseMapScale = 0.015f;
     private const float perlinNoiseStrenght = 25f;
     private const float mapWaterLevel = 50f;
-    private readonly Vector3Int chunkSize = MapData.chunkSize;
     private readonly Vector3Int chunkPosition;
-    private readonly Voxel[,,] chunkVoxels = new Voxel[MapData.chunkSize.x, MapData.chunkSize.y, MapData.chunkSize.z];
+    private readonly Voxel[,,] chunkVoxels = new Voxel[MapData.CHUNK_SIZE_X, MapData.CHUNK_SIZE_Y, MapData.CHUNK_SIZE_Z];
 
     public ChunkData(Vector3Int chunkPosition)
     {
@@ -16,19 +15,19 @@ public class ChunkData
 
     private Vector3Int RelativeToAbsolutCoordinate(Vector3Int relative)
     {
-        return relative + Vector3Int.Scale(chunkPosition, chunkSize);
+        return relative + Vector3Int.Scale(chunkPosition, new Vector3Int(MapData.CHUNK_SIZE_X, MapData.CHUNK_SIZE_Y, MapData.CHUNK_SIZE_Z));
     }
 
     public void Generate()
     {
         Vector3Int startingPosition = RelativeToAbsolutCoordinate(Vector3Int.zero);
-        for (int x = 0; x < chunkSize.x; x++)
+        for (int x = 0; x < MapData.CHUNK_SIZE_X; x++)
         {
-            for (int z = 0; z < chunkSize.z; z++)
+            for (int z = 0; z < MapData.CHUNK_SIZE_Z; z++)
             {
                 float groundLevel = Mathf.PerlinNoise(perlinNoiseMapScale * (x + startingPosition.x), perlinNoiseMapScale * (z + startingPosition.z));
                 groundLevel = groundLevel * groundLevel * perlinNoiseStrenght + mapWaterLevel;
-                int maxY = Mathf.Min(chunkSize.y, Mathf.FloorToInt(groundLevel - startingPosition.y));
+                int maxY = Mathf.Min(MapData.CHUNK_SIZE_Y, Mathf.FloorToInt(groundLevel - startingPosition.y));
                 for (int y = 0; y < maxY; y++)
                 {
                     chunkVoxels[x, y, z].type = VoxelType.Stone;

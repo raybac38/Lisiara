@@ -6,11 +6,10 @@ public class MapData
     /// <summary>
     /// CHUNK SIZE NEED TO BE A POWER OF 2 FOR EFFICIENCY PURPOSE
     /// </summary>
-    static public readonly Vector3Int chunkSize = new(32, 32, 32);
 
-    private const int CHUNK_SIZE_X = 32; 
-    private const int CHUNK_SIZE_Y = 32;
-    private const int CHUNK_SIZE_Z = 32;
+    public const int CHUNK_SIZE_X = 32;
+    public const int CHUNK_SIZE_Y = 32;
+    public const int CHUNK_SIZE_Z = 32;
 
     private const int CHUNK_SHIFT_X = 5; 
     private const int CHUNK_SHIFT_Y = 5;
@@ -21,18 +20,22 @@ public class MapData
     private const int CHUNK_MASK_Z = CHUNK_SIZE_Z - 1;
 
 
-    static public readonly Vector3Int mapSize = new(32, 4, 32);
-    //static public readonly Vector3Int mapSize = new(4, 4, 4);
+    //static public readonly Vector3Int mapSize = new(32, 4, 32);
+
+    public const int MAP_SIZE_X = 32;
+    public const int MAP_SIZE_Y = 4;
+    public const int MAP_SIZE_Z = 32;
+
     private ChunkData[,,] loadedChunks;
 
     public MapData()
     {
-        loadedChunks = new ChunkData[mapSize.x, mapSize.y, mapSize.z];
-        for (int x = 0; x < mapSize.x; x++)
+        loadedChunks = new ChunkData[MAP_SIZE_X, MAP_SIZE_Y, MAP_SIZE_Z];
+        for (int x = 0; x < MAP_SIZE_X; x++)
         {
-            for (int y = 0; y < mapSize.y; y++)
+            for (int y = 0; y < MAP_SIZE_Y; y++)
             {
-                for (int z = 0; z < mapSize.z; z++)
+                for (int z = 0; z < MAP_SIZE_Z; z++)
                 {
                     ChunkData chunkData = new(new(x, y, z));
                     loadedChunks[x, y, z] = chunkData;
@@ -66,7 +69,7 @@ public class MapData
     private bool IsOutside(int x, int y, int z)
     {
         return x < 0 || y < 0 || z < 0 ||
-               x >= mapSize.x || y >= mapSize.y || z >= mapSize.z;
+               x >= MAP_SIZE_X || y >= MAP_SIZE_Y || z >= MAP_SIZE_Z;
     }
 
 }

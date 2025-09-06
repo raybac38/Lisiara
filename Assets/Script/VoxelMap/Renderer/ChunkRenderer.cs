@@ -12,11 +12,14 @@ public class ChunkRenderer : MonoBehaviour
 
     public MapData mapData;
 
-    private bool IsFaceVisible(Vector3Int relativePosition, Vector3Int faceNormal)
+    private bool IsFaceVisible(int posX, int posY, int posZ, int normalX, int normalY, int normalZ)
     {
-        Vector3Int absolutPosition = relativePosition + (chunkPosition * MapData.chunkSize);
-        return mapData.GetVoxelData(absolutPosition.x, absolutPosition.y, absolutPosition.z).type != VoxelType.Air &&
-            mapData.GetVoxelData(absolutPosition.x + faceNormal.x, absolutPosition.y + faceNormal.y, absolutPosition.z + faceNormal.z).type == VoxelType.Air;
+        int absX = posX + chunkPosition.x * MapData.CHUNK_SIZE_X;
+        int absY = posY + chunkPosition.y * MapData.CHUNK_SIZE_Y;
+        int absZ = posZ + chunkPosition.z * MapData.CHUNK_SIZE_Z;
+
+        return mapData.GetVoxelData(absX, absY, absZ).type != VoxelType.Air &&
+            mapData.GetVoxelData(absX + normalX, absY + normalY, absZ + normalZ).type == VoxelType.Air;
     }
 
     private void Awake()
@@ -37,9 +40,10 @@ public class ChunkRenderer : MonoBehaviour
 
     private void GenerateTopFace(in List<Vector3> vertices,in List<int> triangles,in List<Vector2> uvs)
     {
-        int xmax = MapData.chunkSize.x;
-        int ymax = MapData.chunkSize.y;
-        int zmax = MapData.chunkSize.z;
+        int xmax = MapData.CHUNK_SIZE_X;
+        int ymax = MapData.CHUNK_SIZE_Y;
+        int zmax = MapData.CHUNK_SIZE_Z;
+        
 
         bool[,] mask = new bool[xmax, zmax];
         for (int y = 0; y < ymax; y++)
@@ -49,7 +53,7 @@ public class ChunkRenderer : MonoBehaviour
             {
                 for (int z = 0; z < zmax; z++)
                 {
-                    bool isVisible = IsFaceVisible(new Vector3Int(x, y, z), Vector3Int.up);
+                    bool isVisible = IsFaceVisible(x, y, z, 0, 1, 0);   /// Up
                     mask[x, z] = isVisible;
                     containVisibleFace |= isVisible;
                 }
