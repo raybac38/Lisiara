@@ -53,7 +53,7 @@ public class ChunkRenderer : MonoBehaviour
             {
                 for (int z = 0; z < zmax; z++)
                 {
-                    bool isVisible = IsFaceVisible(x, y, z, 0, 1, 0);   /// Up
+                    bool isVisible = IsFaceVisible(x, y, z, 0, 1, 0);   /// UP
                     mask[x, z] = isVisible;
                     containVisibleFace |= isVisible;
                 }
