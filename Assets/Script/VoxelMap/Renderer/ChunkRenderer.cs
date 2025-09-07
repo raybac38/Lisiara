@@ -137,6 +137,105 @@ public class ChunkRenderer : MonoBehaviour
         }
     }
 
+    private void GenerateBottomFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
+    {
+        int xmax = MapData.CHUNK_SIZE_X;
+        int ymax = MapData.CHUNK_SIZE_Y;
+        int zmax = MapData.CHUNK_SIZE_Z;
+
+
+        bool[,] mask = new bool[xmax, zmax];
+        for (int y = 0; y < ymax; y++)
+        {
+            bool containVisibleFace = false;
+            for (int x = 0; x < xmax; x++)
+            {
+                for (int z = 0; z < zmax; z++)
+                {
+                    bool isVisible = IsFaceVisible(x, y, z, 0, -1, 0);   /// DOWN
+                    mask[x, z] = isVisible;
+                    containVisibleFace |= isVisible;
+                }
+            }
+
+            if (!containVisibleFace) continue;
+
+            for (int x = 0; x < xmax; x++)
+            {
+                for (int z = 0; z < zmax; z++)
+                {
+                    if (!mask[x, z]) continue;
+                    int startingx = x;
+                    int startingz = z;
+
+                    int endingx = x;
+                    int endingz = z;
+
+                    while (endingx < xmax && mask[endingx, endingz])
+                    {
+                        endingx++;
+                    }
+
+
+                    bool done = false;
+                    while (!done)
+                    {
+                        int newZ = endingz + 1;
+                        if (newZ >= zmax) break;
+
+                        for (int innerx = startingx; innerx < endingx; innerx++)
+                        {
+                            if (!mask[innerx, newZ])
+                            {
+                                done = true;
+                                break;
+                            }
+                        }
+
+                        if (!done)
+                        {
+                            endingz++;
+                        }
+                    }
+                    endingz++;
+
+                    for (int innerx = startingx; innerx < endingx; innerx++)
+                    {
+                        for (int innerz = startingz; innerz < endingz; innerz++)
+                        {
+                            mask[innerx, innerz] = false;
+                        }
+                    }
+
+                    Vector3 bottomLeft = new Vector3(startingx, y, startingz);
+                    Vector3 bottomRight = new Vector3(endingx, y, startingz);
+                    Vector3 topLeft = new Vector3(startingx, y, endingz);
+                    Vector3 topRight = new Vector3(endingx, y, endingz);
+
+                    int index = vertices.Count;
+
+                    vertices.Add(bottomLeft);
+                    vertices.Add(topLeft);
+                    vertices.Add(topRight);
+                    vertices.Add(bottomRight);
+
+                    triangles.Add(index);
+                    triangles.Add(index + 2);
+                    triangles.Add(index + 1);
+
+                    triangles.Add(index);
+                    triangles.Add(index + 3);
+                    triangles.Add(index + 2);
+
+                    uvs.Add(new Vector2(startingx, startingz));
+                    uvs.Add(new Vector2(endingx, startingz));
+                    uvs.Add(new Vector2(startingx, endingz));
+                    uvs.Add(new Vector2(endingx, endingz));
+                }
+            }
+        }
+    }
+
 
     public void GenerateMesh()
     {
@@ -145,7 +244,8 @@ public class ChunkRenderer : MonoBehaviour
         List<Vector2> uvs = new();
 
 
-        GenerateTopFace(vertices, triangles, uvs);          
+        GenerateTopFace(vertices, triangles, uvs);      
+        GenerateBottomFace(vertices, triangles, uvs);
 
         mesh.Clear();
         mesh.indexFormat = IndexFormat.UInt32;
@@ -157,7 +257,4 @@ public class ChunkRenderer : MonoBehaviour
         meshFilter.mesh = mesh;
         renderer.material = MapRenderer.defaultStaticMaterial;
     }
-
-
-
 }
