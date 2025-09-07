@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -38,601 +39,188 @@ public class ChunkRenderer : MonoBehaviour
         }
     }
 
-    private void GenerateTopFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
+    private delegate bool FaceVisibility(int x, int y, int z);
+    private delegate void AddFaceVertices(List<Vector3> vertices, int startA, int startB, int endA, int endB, int fixedCoord);
+
+    private void GenerateFace(
+        int sizeA, int sizeB, int sizeFixed,
+        FaceVisibility isVisible,
+        AddFaceVertices addVertices,
+        in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs,
+        bool invertTriangles = false)
     {
-        int xmax = MapData.CHUNK_SIZE_X;
-        int ymax = MapData.CHUNK_SIZE_Y;
-        int zmax = MapData.CHUNK_SIZE_Z;
-
-
-        bool[,] mask = new bool[xmax, zmax];
-        for (int y = 0; y < ymax; y++)
+        bool[,] mask = new bool[sizeA, sizeB];
+        for (int fixedCoord = 0; fixedCoord < sizeFixed; fixedCoord++)
         {
             bool containVisibleFace = false;
-            for (int x = 0; x < xmax; x++)
+            for (int a = 0; a < sizeA; a++)
             {
-                for (int z = 0; z < zmax; z++)
+                for (int b = 0; b < sizeB; b++)
                 {
-                    bool isVisible = IsFaceVisible(x, y, z, 0, 1, 0);   /// UP
-                    mask[x, z] = isVisible;
-                    containVisibleFace |= isVisible;
+                    bool visible = isVisible(a, b, fixedCoord);
+                    mask[a, b] = visible;
+                    containVisibleFace |= visible;
                 }
             }
-
             if (!containVisibleFace) continue;
 
-            for (int x = 0; x < xmax; x++)
+            for (int a = 0; a < sizeA; a++)
             {
-                for (int z = 0; z < zmax; z++)
+                for (int b = 0; b < sizeB; b++)
                 {
-                    if (!mask[x, z]) continue;
-                    int startingx = x;
-                    int startingz = z;
+                    if (!mask[a, b]) continue;
+                    int startA = a, startB = b, endA = a, endB = b;
 
-                    int endingx = x;
-                    int endingz = z;
-
-                    while (endingx < xmax && mask[endingx, endingz])
-                    {
-                        endingx++;
-                    }
-
+                    while (endA < sizeA && mask[endA, endB]) endA++;
 
                     bool done = false;
                     while (!done)
                     {
-                        int newZ = endingz + 1;
-                        if (newZ >= zmax) break;
-
-                        for (int innerx = startingx; innerx < endingx; innerx++)
+                        int newB = endB + 1;
+                        if (newB >= sizeB) break;
+                        for (int innerA = startA; innerA < endA; innerA++)
                         {
-                            if (!mask[innerx, newZ])
+                            if (!mask[innerA, newB])
                             {
                                 done = true;
                                 break;
                             }
                         }
-
-                        if (!done)
-                        {
-                            endingz++;
-                        }
+                        if (!done) endB++;
                     }
-                    endingz++;
+                    endB++;
 
-                    for (int innerx = startingx; innerx < endingx; innerx++)
-                    {
-                        for (int innerz = startingz; innerz < endingz; innerz++)
-                        {
-                            mask[innerx, innerz] = false;
-                        }
-                    }
-
-                    Vector3 bottomLeft = new Vector3(startingx, y + 1, startingz);
-                    Vector3 bottomRight = new Vector3(endingx, y + 1, startingz);
-                    Vector3 topLeft = new Vector3(startingx, y + 1, endingz);
-                    Vector3 topRight = new Vector3(endingx, y + 1, endingz);
+                    for (int innerA = startA; innerA < endA; innerA++)
+                        for (int innerB = startB; innerB < endB; innerB++)
+                            mask[innerA, innerB] = false;
 
                     int index = vertices.Count;
+                    addVertices(vertices, startA, startB, endA, endB, fixedCoord);
 
-                    vertices.Add(bottomLeft);
-                    vertices.Add(topLeft);
-                    vertices.Add(topRight);
-                    vertices.Add(bottomRight);
+                    if (!invertTriangles)
+                    {
+                        triangles.Add(index);
+                        triangles.Add(index + 1);
+                        triangles.Add(index + 2);
+                        triangles.Add(index);
+                        triangles.Add(index + 2);
+                        triangles.Add(index + 3);
+                    }
+                    else
+                    {
+                        triangles.Add(index);
+                        triangles.Add(index + 2);
+                        triangles.Add(index + 1);
+                        triangles.Add(index);
+                        triangles.Add(index + 3);
+                        triangles.Add(index + 2);
+                    }
 
-                    triangles.Add(index);
-                    triangles.Add(index + 1);
-                    triangles.Add(index + 2);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 2);
-                    triangles.Add(index + 3);
-
-                    uvs.Add(new Vector2(startingx, startingz));
-                    uvs.Add(new Vector2(endingx, startingz));
-                    uvs.Add(new Vector2(startingx, endingz));
-                    uvs.Add(new Vector2(endingx, endingz));
+                    uvs.Add(new Vector2(startA, startB));
+                    uvs.Add(new Vector2(endA, startB));
+                    uvs.Add(new Vector2(startA, endB));
+                    uvs.Add(new Vector2(endA, endB));
                 }
             }
         }
+    }
+
+    // Exemples d’utilisation pour chaque face :
+    private void GenerateTopFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
+    {
+        GenerateFace(
+            MapData.CHUNK_SIZE_X, MapData.CHUNK_SIZE_Z, MapData.CHUNK_SIZE_Y,
+            (x, z, y) => IsFaceVisible(x, y, z, 0, 1, 0),
+            (verts, sx, sz, ex, ez, y) =>
+            {
+                verts.Add(new Vector3(sx, y + 1, sz));  // Bas gauche
+                verts.Add(new Vector3(sx, y + 1, ez));  // Haut gauche
+                verts.Add(new Vector3(ex, y + 1, ez));  // Haut droite
+                verts.Add(new Vector3(ex, y + 1, sz));  // Bas droite
+            },
+            vertices, triangles, uvs, false
+        );
     }
 
     private void GenerateBottomFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
     {
-        int xmax = MapData.CHUNK_SIZE_X;
-        int ymax = MapData.CHUNK_SIZE_Y;
-        int zmax = MapData.CHUNK_SIZE_Z;
-
-
-        bool[,] mask = new bool[xmax, zmax];
-        for (int y = 0; y < ymax; y++)
-        {
-            bool containVisibleFace = false;
-            for (int x = 0; x < xmax; x++)
+        GenerateFace(
+            MapData.CHUNK_SIZE_X, MapData.CHUNK_SIZE_Z, MapData.CHUNK_SIZE_Y,
+            (x, z, y) => IsFaceVisible(x, y, z, 0, -1, 0),
+            (verts, sx, sz, ex, ez, y) =>
             {
-                for (int z = 0; z < zmax; z++)
-                {
-                    bool isVisible = IsFaceVisible(x, y, z, 0, -1, 0);   /// DOWN
-                    mask[x, z] = isVisible;
-                    containVisibleFace |= isVisible;
-                }
-            }
-
-            if (!containVisibleFace) continue;
-
-            for (int x = 0; x < xmax; x++)
-            {
-                for (int z = 0; z < zmax; z++)
-                {
-                    if (!mask[x, z]) continue;
-                    int startingx = x;
-                    int startingz = z;
-
-                    int endingx = x;
-                    int endingz = z;
-
-                    while (endingx < xmax && mask[endingx, endingz])
-                    {
-                        endingx++;
-                    }
-
-
-                    bool done = false;
-                    while (!done)
-                    {
-                        int newZ = endingz + 1;
-                        if (newZ >= zmax) break;
-
-                        for (int innerx = startingx; innerx < endingx; innerx++)
-                        {
-                            if (!mask[innerx, newZ])
-                            {
-                                done = true;
-                                break;
-                            }
-                        }
-
-                        if (!done)
-                        {
-                            endingz++;
-                        }
-                    }
-                    endingz++;
-
-                    for (int innerx = startingx; innerx < endingx; innerx++)
-                    {
-                        for (int innerz = startingz; innerz < endingz; innerz++)
-                        {
-                            mask[innerx, innerz] = false;
-                        }
-                    }
-
-                    Vector3 bottomLeft = new Vector3(startingx, y, startingz);
-                    Vector3 bottomRight = new Vector3(endingx, y, startingz);
-                    Vector3 topLeft = new Vector3(startingx, y, endingz);
-                    Vector3 topRight = new Vector3(endingx, y, endingz);
-
-                    int index = vertices.Count;
-
-                    vertices.Add(bottomLeft);
-                    vertices.Add(topLeft);
-                    vertices.Add(topRight);
-                    vertices.Add(bottomRight);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 2);
-                    triangles.Add(index + 1);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 3);
-                    triangles.Add(index + 2);
-
-                    uvs.Add(new Vector2(startingx, startingz));
-                    uvs.Add(new Vector2(endingx, startingz));
-                    uvs.Add(new Vector2(startingx, endingz));
-                    uvs.Add(new Vector2(endingx, endingz));
-                }
-            }
-        }
+                verts.Add(new Vector3(sx, y, sz));    // Bas gauche
+                verts.Add(new Vector3(ex, y, sz));    // Bas droite
+                verts.Add(new Vector3(ex, y, ez));    // Haut droite
+                verts.Add(new Vector3(sx, y, ez));    // Haut gauche
+            },
+            vertices, triangles, uvs, false
+        );
     }
 
     private void GenerateFrontFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
     {
-        int xmax = MapData.CHUNK_SIZE_X;
-        int ymax = MapData.CHUNK_SIZE_Y;
-        int zmax = MapData.CHUNK_SIZE_Z;
-
-
-        bool[,] mask = new bool[xmax, ymax];
-        for (int z = 0; z < zmax; z++)
-        {
-            bool containVisibleFace = false;
-            for (int x = 0; x < xmax; x++)
+        GenerateFace(
+            MapData.CHUNK_SIZE_X, MapData.CHUNK_SIZE_Y, MapData.CHUNK_SIZE_Z,
+            (x, y, z) => IsFaceVisible(x, y, z, 0, 0, 1),
+            (verts, sx, sy, ex, ey, z) =>
             {
-                for (int y = 0; y < ymax; y++)
-                {
-                    bool isVisible = IsFaceVisible(x, y, z, 0, 0, 1);   /// FORWARD
-                    mask[x, y] = isVisible;
-                    containVisibleFace |= isVisible;
-                }
-            }
+                verts.Add(new Vector3(sx, sy, z + 1));    // Bas gauche
+                verts.Add(new Vector3(ex, sy, z + 1));    // Bas droite
+                verts.Add(new Vector3(ex, ey, z + 1));    // Haut droite
+                verts.Add(new Vector3(sx, ey, z + 1));    // Haut gauche
+            },
+            vertices, triangles, uvs, false
+        );
+    }
 
-            if (!containVisibleFace) continue;
-
-            for (int x = 0; x < xmax; x++)
+    private void GenerateBackFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
+    {
+        GenerateFace(
+            MapData.CHUNK_SIZE_X, MapData.CHUNK_SIZE_Y, MapData.CHUNK_SIZE_Z,
+            (x, y, z) => IsFaceVisible(x, y, z, 0, 0, -1),
+            (verts, sx, sy, ex, ey, z) =>
             {
-                for (int y = 0; y < ymax; y++)
-                {
-                    if (!mask[x, y]) continue;
-                    int startingx = x;
-                    int startingy = y;
-
-                    int endingx = x;
-                    int endingy = y;
-
-                    while (endingx < xmax && mask[endingx, endingy])
-                    {
-                        endingx++;
-                    }
-
-
-                    bool done = false;
-                    while (!done)
-                    {
-                        int newY = endingy + 1;
-                        if (newY >= ymax) break;
-
-                        for (int innerx = startingx; innerx < endingx; innerx++)
-                        {
-                            if (!mask[innerx, newY])
-                            {
-                                done = true;
-                                break;
-                            }
-                        }
-
-                        if (!done)
-                        {
-                            endingy++;
-                        }
-                    }
-                    endingy++;
-
-                    for (int innerx = startingx; innerx < endingx; innerx++)
-                    {
-                        for (int innery = startingy; innery < endingy; innery++)
-                        {
-                            mask[innerx, innery] = false;
-                        }
-                    }
-
-                    Vector3 bottomLeft = new Vector3(startingx, startingy, z + 1);
-                    Vector3 bottomRight = new Vector3(endingx, startingy, z + 1);
-                    Vector3 topLeft = new Vector3(startingx, endingy, z + 1);
-                    Vector3 topRight = new Vector3(endingx, endingy, z + 1);
-
-                    int index = vertices.Count;
-
-                    vertices.Add(bottomLeft);
-                    vertices.Add(topLeft);
-                    vertices.Add(topRight);
-                    vertices.Add(bottomRight);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 2);
-                    triangles.Add(index + 1);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 3);
-                    triangles.Add(index + 2);
-
-                    uvs.Add(new Vector2(startingx, startingy));
-                    uvs.Add(new Vector2(endingx, startingy));
-                    uvs.Add(new Vector2(startingx, endingy));
-                    uvs.Add(new Vector2(endingx, endingy));
-                }
-            }
-        }
+                verts.Add(new Vector3(ex, sy, z));    // Bas droite
+                verts.Add(new Vector3(sx, sy, z));    // Bas gauche
+                verts.Add(new Vector3(sx, ey, z));    // Haut gauche
+                verts.Add(new Vector3(ex, ey, z));    // Haut droite
+            },
+            vertices, triangles, uvs, false
+        );
     }
 
     private void GenerateRightFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
     {
-        int xmax = MapData.CHUNK_SIZE_X;
-        int ymax = MapData.CHUNK_SIZE_Y;
-        int zmax = MapData.CHUNK_SIZE_Z;
-
-        bool[,] mask = new bool[zmax, ymax];
-        for (int x = 0; x < xmax; x++)
-        {
-            bool containVisibleFace = false;
-            for (int z = 0; z < zmax; z++)
+        GenerateFace(
+            MapData.CHUNK_SIZE_Z, MapData.CHUNK_SIZE_Y, MapData.CHUNK_SIZE_X,
+            (z, y, x) => IsFaceVisible(x, y, z, 1, 0, 0),
+            (verts, sz, sy, ez, ey, x) =>
             {
-                for (int y = 0; y < ymax; y++)
-                {
-                    bool isVisible = IsFaceVisible(x, y, z, 1, 0, 0);   /// RIGHT
-                    mask[z, y] = isVisible;
-                    containVisibleFace |= isVisible;
-                }
-            }
-
-            if (!containVisibleFace) continue;
-
-            for (int z = 0; z < zmax; z++)
-            {
-                for (int y = 0; y < ymax; y++)
-                {
-                    if (!mask[z, y]) continue;
-                    int startingz = z;
-                    int startingy = y;
-
-                    int endingz = z;
-                    int endingy = y;
-
-                    while (endingz < zmax && mask[endingz, endingy])
-                    {
-                        endingz++;
-                    }
-
-
-                    bool done = false;
-                    while (!done)
-                    {
-                        int newY = endingy + 1;
-                        if (newY >= ymax) break;
-
-                        for (int innerz = startingz; innerz < endingz; innerz++)
-                        {
-                            if (!mask[innerz, newY])
-                            {
-                                done = true;
-                                break;
-                            }
-                        }
-
-                        if (!done)
-                        {
-                            endingy++;
-                        }
-                    }
-                    endingy++;
-
-                    for (int innerz = startingz; innerz < endingz; innerz++)
-                    {
-                        for (int innery = startingy; innery < endingy; innery++)
-                        {
-                            mask[innerz, innery] = false;
-                        }
-                    }
-
-                    Vector3 bottomLeft = new Vector3(x + 1, startingy, startingz);
-                    Vector3 bottomRight = new Vector3(x + 1, startingy, endingz);
-                    Vector3 topLeft = new Vector3(x + 1, endingy, startingz);
-                    Vector3 topRight = new Vector3(x + 1, endingy, endingz);
-
-                    int index = vertices.Count;
-
-                    vertices.Add(bottomLeft);
-                    vertices.Add(topLeft);
-                    vertices.Add(topRight);
-                    vertices.Add(bottomRight);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 1);
-                    triangles.Add(index + 2);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 2);
-                    triangles.Add(index + 3);
-
-                    uvs.Add(new Vector2(startingz, startingy));
-                    uvs.Add(new Vector2(endingz, startingy));
-                    uvs.Add(new Vector2(startingz, endingy));
-                    uvs.Add(new Vector2(endingz, endingy));
-                }
-            }
-        }
-    }
-
-
-
-    private void GenerateBackFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
-    {
-        int xmax = MapData.CHUNK_SIZE_X;
-        int ymax = MapData.CHUNK_SIZE_Y;
-        int zmax = MapData.CHUNK_SIZE_Z;
-
-
-        bool[,] mask = new bool[xmax, ymax];
-        for (int z = 0; z < zmax; z++)
-        {
-            bool containVisibleFace = false;
-            for (int x = 0; x < xmax; x++)
-            {
-                for (int y = 0; y < ymax; y++)
-                {
-                    bool isVisible = IsFaceVisible(x, y, z, 0, 0, -1);   /// BACKWARD
-                    mask[x, y] = isVisible;
-                    containVisibleFace |= isVisible;
-                }
-            }
-
-            if (!containVisibleFace) continue;
-
-            for (int x = 0; x < xmax; x++)
-            {
-                for (int y = 0; y < ymax; y++)
-                {
-                    if (!mask[x, y]) continue;
-                    int startingx = x;
-                    int startingy = y;
-
-                    int endingx = x;
-                    int endingy = y;
-
-                    while (endingx < xmax && mask[endingx, endingy])
-                    {
-                        endingx++;
-                    }
-
-
-                    bool done = false;
-                    while (!done)
-                    {
-                        int newY = endingy + 1;
-                        if (newY >= ymax) break;
-
-                        for (int innerx = startingx; innerx < endingx; innerx++)
-                        {
-                            if (!mask[innerx, newY])
-                            {
-                                done = true;
-                                break;
-                            }
-                        }
-
-                        if (!done)
-                        {
-                            endingy++;
-                        }
-                    }
-                    endingy++;
-
-                    for (int innerx = startingx; innerx < endingx; innerx++)
-                    {
-                        for (int innery = startingy; innery < endingy; innery++)
-                        {
-                            mask[innerx, innery] = false;
-                        }
-                    }
-
-                    Vector3 bottomLeft = new Vector3(startingx, startingy, z);
-                    Vector3 bottomRight = new Vector3(endingx, startingy, z);
-                    Vector3 topLeft = new Vector3(startingx, endingy, z);
-                    Vector3 topRight = new Vector3(endingx, endingy, z);
-
-                    int index = vertices.Count;
-
-                    vertices.Add(bottomLeft);
-                    vertices.Add(topLeft);
-                    vertices.Add(topRight);
-                    vertices.Add(bottomRight);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 1);
-                    triangles.Add(index + 2);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 2);
-                    triangles.Add(index + 3);
-
-                    uvs.Add(new Vector2(startingx, startingy));
-                    uvs.Add(new Vector2(endingx, startingy));
-                    uvs.Add(new Vector2(startingx, endingy));
-                    uvs.Add(new Vector2(endingx, endingy));
-                }
-            }
-        }
+                verts.Add(new Vector3(x + 1, sy, ez));    // Bas droite
+                verts.Add(new Vector3(x + 1, sy, sz));    // Bas gauche
+                verts.Add(new Vector3(x + 1, ey, sz));    // Haut gauche
+                verts.Add(new Vector3(x + 1, ey, ez));    // Haut droite
+            },
+            vertices, triangles, uvs, false
+        );
     }
 
     private void GenerateLeftFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
     {
-        int xmax = MapData.CHUNK_SIZE_X;
-        int ymax = MapData.CHUNK_SIZE_Y;
-        int zmax = MapData.CHUNK_SIZE_Z;
-
-        bool[,] mask = new bool[zmax, ymax];
-        for (int x = 0; x < xmax; x++)
-        {
-            bool containVisibleFace = false;
-            for (int z = 0; z < zmax; z++)
+        GenerateFace(
+            MapData.CHUNK_SIZE_Z, MapData.CHUNK_SIZE_Y, MapData.CHUNK_SIZE_X,
+            (z, y, x) => IsFaceVisible(x, y, z, -1, 0, 0),
+            (verts, sz, sy, ez, ey, x) =>
             {
-                for (int y = 0; y < ymax; y++)
-                {
-                    bool isVisible = IsFaceVisible(x, y, z, -1, 0, 0);   /// LEFT
-                    mask[z, y] = isVisible;
-                    containVisibleFace |= isVisible;
-                }
-            }
-
-            if (!containVisibleFace) continue;
-
-            for (int z = 0; z < zmax; z++)
-            {
-                for (int y = 0; y < ymax; y++)
-                {
-                    if (!mask[z, y]) continue;
-                    int startingz = z;
-                    int startingy = y;
-
-                    int endingz = z;
-                    int endingy = y;
-
-                    while (endingz < zmax && mask[endingz, endingy])
-                    {
-                        endingz++;
-                    }
-
-
-                    bool done = false;
-                    while (!done)
-                    {
-                        int newY = endingy + 1;
-                        if (newY >= ymax) break;
-
-                        for (int innerz = startingz; innerz < endingz; innerz++)
-                        {
-                            if (!mask[innerz, newY])
-                            {
-                                done = true;
-                                break;
-                            }
-                        }
-
-                        if (!done)
-                        {
-                            endingy++;
-                        }
-                    }
-                    endingy++;
-
-                    for (int innerz = startingz; innerz < endingz; innerz++)
-                    {
-                        for (int innery = startingy; innery < endingy; innery++)
-                        {
-                            mask[innerz, innery] = false;
-                        }
-                    }
-
-                    Vector3 bottomLeft = new Vector3(x , startingy, startingz);
-                    Vector3 bottomRight = new Vector3(x , startingy, endingz);
-                    Vector3 topLeft = new Vector3(x , endingy, startingz);
-                    Vector3 topRight = new Vector3(x , endingy, endingz);
-
-                    int index = vertices.Count;
-
-                    vertices.Add(bottomLeft);
-                    vertices.Add(topLeft);
-                    vertices.Add(topRight);
-                    vertices.Add(bottomRight);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 2);
-                    triangles.Add(index + 1);
-
-                    triangles.Add(index);
-                    triangles.Add(index + 3);
-                    triangles.Add(index + 2);
-
-                    uvs.Add(new Vector2(startingz, startingy));
-                    uvs.Add(new Vector2(endingz, startingy));
-                    uvs.Add(new Vector2(startingz, endingy));
-                    uvs.Add(new Vector2(endingz, endingy));
-                }
-            }
-        }
+                verts.Add(new Vector3(x, sy, sz));    // Bas gauche
+                verts.Add(new Vector3(x, sy, ez));    // Bas droite
+                verts.Add(new Vector3(x, ey, ez));    // Haut droite
+                verts.Add(new Vector3(x, ey, sz));    // Haut gauche
+            },
+            vertices, triangles, uvs, false
+        );
     }
-
-
 
     public void GenerateMesh()
     {
@@ -640,16 +228,13 @@ public class ChunkRenderer : MonoBehaviour
         List<int> triangles = new();
         List<Vector2> uvs = new();
 
-        /// Y
+        // Génération de toutes les faces
         GenerateTopFace(vertices, triangles, uvs);
         GenerateBottomFace(vertices, triangles, uvs);
-        /// Z
         GenerateFrontFace(vertices, triangles, uvs);
         GenerateBackFace(vertices, triangles, uvs);
-        /// X
         GenerateRightFace(vertices, triangles, uvs);
         GenerateLeftFace(vertices, triangles, uvs);
-
 
         mesh.Clear();
         mesh.indexFormat = IndexFormat.UInt32;
