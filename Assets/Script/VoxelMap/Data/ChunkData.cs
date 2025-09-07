@@ -1,3 +1,4 @@
+using Unity.Collections;
 using UnityEngine;
 
 public class ChunkData
@@ -6,7 +7,17 @@ public class ChunkData
     private const float perlinNoiseStrenght = 25f;
     private const float mapWaterLevel = 50f;
     private readonly Vector3Int chunkPosition;
-    private readonly Voxel[,,] chunkVoxels = new Voxel[MapData.CHUNK_SIZE_X, MapData.CHUNK_SIZE_Y, MapData.CHUNK_SIZE_Z];
+
+    private NativeArray<Voxel> voxels = new(MapData.CHUNK_SIZE_X * MapData.CHUNK_SIZE_Y * MapData.CHUNK_SIZE_Z, Allocator.Persistent);
+
+    private Voxel Get(int x, int y, int z)
+    {
+        return voxels[z + y * MapData.CHUNK_SIZE_Y + (x * MapData.CHUNK_SIZE_Z)];
+    }
+    private void Set(int x, int y, int z, Voxel voxel)
+    {
+        voxels[z + (y + x * MapData.CHUNK_SIZE_Z) * MapData.CHUNK_SIZE_Y + (x * MapData.CHUNK_SIZE_Z)] = voxel;
+    }
 
     public ChunkData(Vector3Int chunkPosition)
     {
@@ -30,13 +41,14 @@ public class ChunkData
                 int maxY = Mathf.Min(MapData.CHUNK_SIZE_Y, Mathf.FloorToInt(groundLevel - startingPosition.y));
                 for (int y = 0; y < maxY; y++)
                 {
-                    chunkVoxels[x, y, z].type = VoxelType.Stone;
+                    Set(x,y,z, new Voxel {type = VoxelType.Stone});
                 }
             }
         }
     }
 
-    public Voxel GetLocalVoxel(int x, int y, int z) { 
-        return chunkVoxels[x,y,z];
+    public Voxel GetLocalVoxel(int x, int y, int z) {
+
+        return Get(x, y, z);
     }
 }

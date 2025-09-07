@@ -22,9 +22,9 @@ public class MapData
 
     //static public readonly Vector3Int mapSize = new(32, 4, 32);
 
-    public const int MAP_SIZE_X = 32;
+    public const int MAP_SIZE_X = 8;
     public const int MAP_SIZE_Y = 4;
-    public const int MAP_SIZE_Z = 32;
+    public const int MAP_SIZE_Z = 8;
 
     private ChunkData[,,] loadedChunks;
 
