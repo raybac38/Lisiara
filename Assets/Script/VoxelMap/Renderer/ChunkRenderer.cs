@@ -125,7 +125,6 @@ public class ChunkRenderer : MonoBehaviour
         }
     }
 
-    // Exemples d’utilisation pour chaque face :
     private void GenerateTopFace(in List<Vector3> vertices, in List<int> triangles, in List<Vector2> uvs)
     {
         GenerateFace(
