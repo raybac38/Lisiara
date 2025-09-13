@@ -8,7 +8,7 @@ public class ChunkData
     private const float mapWaterLevel = 50f;
     private readonly Vector3Int chunkPosition;
 
-    private NativeArray<Voxel> voxels = new(MapData.CHUNK_SIZE_X * MapData.CHUNK_SIZE_Y * MapData.CHUNK_SIZE_Z, Allocator.Persistent);
+    public NativeArray<Voxel> voxels = new(MapData.CHUNK_SIZE_X * MapData.CHUNK_SIZE_Y * MapData.CHUNK_SIZE_Z, Allocator.Persistent);
 
     private Voxel Get(int x, int y, int z)
     {

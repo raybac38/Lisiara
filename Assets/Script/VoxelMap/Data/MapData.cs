@@ -1,4 +1,5 @@
 using System;
+using Unity.Burst;
 using UnityEngine;
 
 public class MapData
@@ -22,9 +23,9 @@ public class MapData
 
     //static public readonly Vector3Int mapSize = new(32, 4, 32);
 
-    public const int MAP_SIZE_X = 8;
+    public const int MAP_SIZE_X = 32;
     public const int MAP_SIZE_Y = 4;
-    public const int MAP_SIZE_Z = 8;
+    public const int MAP_SIZE_Z = 32;
 
     private ChunkData[,,] loadedChunks;
 
@@ -71,5 +72,7 @@ public class MapData
         return x < 0 || y < 0 || z < 0 ||
                x >= MAP_SIZE_X || y >= MAP_SIZE_Y || z >= MAP_SIZE_Z;
     }
+
+    public ChunkData GetChunkData(int x, int y, int z) { return loadedChunks[x, y, z]; }
 
 }
