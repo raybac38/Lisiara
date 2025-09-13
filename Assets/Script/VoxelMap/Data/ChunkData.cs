@@ -12,11 +12,12 @@ public class ChunkData
 
     private Voxel Get(int x, int y, int z)
     {
-        return voxels[z + y * MapData.CHUNK_SIZE_Y + (x * MapData.CHUNK_SIZE_Z)];
+        return voxels[x + MapData.CHUNK_SIZE_X * (y + MapData.CHUNK_SIZE_Y * z)];
+
     }
     private void Set(int x, int y, int z, Voxel voxel)
     {
-        voxels[z + (y + x * MapData.CHUNK_SIZE_Z) * MapData.CHUNK_SIZE_Y + (x * MapData.CHUNK_SIZE_Z)] = voxel;
+        voxels[x + MapData.CHUNK_SIZE_X * (y + MapData.CHUNK_SIZE_Y * z)] = voxel;
     }
 
     public ChunkData(Vector3Int chunkPosition)
