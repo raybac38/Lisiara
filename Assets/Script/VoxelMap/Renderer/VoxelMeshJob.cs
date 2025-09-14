@@ -2,6 +2,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEngine.UI;
 
 [BurstCompile]
 public struct VoxelMeshJob : IJob
@@ -44,21 +45,21 @@ public struct VoxelMeshJob : IJob
 
     private void GenerateTopFace()
     {
-        bool[,] mask = new bool[sizeX, sizeZ];
+        NativeArray<bool> mask = new (sizeX * sizeY, Allocator.Temp);
         for (int y = 0; y < sizeY; y++)
         {
             for (int x = 0; x < sizeX; x++)
                 for (int z = 0; z < sizeZ; z++)
-                    mask[x, z] = IsFaceVisible(x, y, z, 0, 1, 0);
+                    mask[x + sizeX * z] = IsFaceVisible(x, y, z, 0, 1, 0);
 
             for (int x = 0; x < sizeX; x++)
             {
                 for (int z = 0; z < sizeZ; z++)
                 {
-                    if (!mask[x, z]) continue;
+                    if (!mask[x + sizeX * z]) continue;
                     int startX = x, startZ = z, endX = x, endZ = z;
 
-                    while (endX < sizeX && mask[endX, endZ]) endX++;
+                    while (endX < sizeX && mask[endX + sizeX * endZ]) endX++;
 
                     bool done = false;
                     while (!done)
@@ -67,7 +68,7 @@ public struct VoxelMeshJob : IJob
                         if (newZ >= sizeZ) break;
                         for (int innerX = startX; innerX < endX; innerX++)
                         {
-                            if (!mask[innerX, newZ])
+                            if (!mask[innerX + sizeX * newZ])
                             {
                                 done = true;
                                 break;
@@ -79,7 +80,7 @@ public struct VoxelMeshJob : IJob
 
                     for (int innerX = startX; innerX < endX; innerX++)
                         for (int innerZ = startZ; innerZ < endZ; innerZ++)
-                            mask[innerX, innerZ] = false;
+                            mask[innerX + sizeX * innerZ] = false;
 
                     int index = vertices.Length;
                     // up
@@ -102,24 +103,25 @@ public struct VoxelMeshJob : IJob
                 }
             }
         }
+        mask.Dispose();
     }
     private void GenerateBottomFace()
     {
-        bool[,] mask = new bool[sizeX, sizeZ];
+        NativeArray<bool> mask = new (sizeX * sizeZ, Allocator.Temp);
         for (int y = 0; y < sizeY; y++)
         {
             for (int x = 0; x < sizeX; x++)
                 for (int z = 0; z < sizeZ; z++)
-                    mask[x, z] = IsFaceVisible(x, y, z, 0, -1, 0);
+                    mask[x + sizeX * z] = IsFaceVisible(x, y, z, 0, -1, 0);
 
             for (int x = 0; x < sizeX; x++)
             {
                 for (int z = 0; z < sizeZ; z++)
                 {
-                    if (!mask[x, z]) continue;
+                    if (!mask[x + sizeX * z]) continue;
                     int startX = x, startZ = z, endX = x, endZ = z;
 
-                    while (endX < sizeX && mask[endX, endZ]) endX++;
+                    while (endX < sizeX && mask[endX + sizeX * endZ]) endX++;
 
                     bool done = false;
                     while (!done)
@@ -128,7 +130,7 @@ public struct VoxelMeshJob : IJob
                         if (newZ >= sizeZ) break;
                         for (int innerX = startX; innerX < endX; innerX++)
                         {
-                            if (!mask[innerX, newZ])
+                            if (!mask[innerX + sizeX * newZ])
                             {
                                 done = true;
                                 break;
@@ -140,7 +142,7 @@ public struct VoxelMeshJob : IJob
 
                     for (int innerX = startX; innerX < endX; innerX++)
                         for (int innerZ = startZ; innerZ < endZ; innerZ++)
-                            mask[innerX, innerZ] = false;
+                            mask[innerX + sizeX * innerZ] = false;
 
                     int index = vertices.Length;
                     // down
@@ -163,25 +165,26 @@ public struct VoxelMeshJob : IJob
                 }
             }
         }
+        mask.Dispose();
     }
 
     private void GenerateFrontFace()
     {
-        bool[,] mask = new bool[sizeX, sizeY];
+        NativeArray<bool> mask = new (sizeX * sizeY, Allocator.Temp);
         for (int z = 0; z < sizeZ; z++)
         {
             for (int x = 0; x < sizeX; x++)
                 for (int y = 0; y < sizeY; y++)
-                    mask[x, y] = IsFaceVisible(x, y, z, 0, 0, 1);
+                    mask[x + sizeX * y] = IsFaceVisible(x, y, z, 0, 0, 1);
 
             for (int x = 0; x < sizeX; x++)
             {
                 for (int y = 0; y < sizeY; y++)
                 {
-                    if (!mask[x, y]) continue;
+                    if (!mask[x + sizeX * y]) continue;
                     int startX = x, startY = y, endX = x, endY = y;
 
-                    while (endX < sizeX && mask[endX, endY]) endX++;
+                    while (endX < sizeX && mask[endX + sizeX * endY]) endX++;
 
                     bool done = false;
                     while (!done)
@@ -190,7 +193,7 @@ public struct VoxelMeshJob : IJob
                         if (newY >= sizeY) break;
                         for (int innerX = startX; innerX < endX; innerX++)
                         {
-                            if (!mask[innerX, newY])
+                            if (!mask[innerX + sizeX * newY])
                             {
                                 done = true;
                                 break;
@@ -202,7 +205,7 @@ public struct VoxelMeshJob : IJob
 
                     for (int innerX = startX; innerX < endX; innerX++)
                         for (int innerY = startY; innerY < endY; innerY++)
-                            mask[innerX, innerY] = false;
+                            mask[innerX + sizeX * innerY] = false;
 
                     int index = vertices.Length;
                     // forward
@@ -225,24 +228,25 @@ public struct VoxelMeshJob : IJob
                 }
             }
         }
+        mask.Dispose();
     }
     private void GenerateBackFace()
     {
-        bool[,] mask = new bool[sizeX, sizeY];
+        NativeArray<bool> mask = new (sizeX * sizeY, Allocator.Temp);
         for (int z = 0; z < sizeZ; z++)
         {
             for (int x = 0; x < sizeX; x++)
                 for (int y = 0; y < sizeY; y++)
-                    mask[x, y] = IsFaceVisible(x, y, z, 0, 0, -1);
+                    mask[x + sizeX * y] = IsFaceVisible(x, y, z, 0, 0, -1);
 
             for (int x = 0; x < sizeX; x++)
             {
                 for (int y = 0; y < sizeY; y++)
                 {
-                    if (!mask[x, y]) continue;
+                    if (!mask[x + sizeX * y]) continue;
                     int startX = x, startY = y, endX = x, endY = y;
 
-                    while (endX < sizeX && mask[endX, endY]) endX++;
+                    while (endX < sizeX && mask[endX + sizeX * endY]) endX++;
 
                     bool done = false;
                     while (!done)
@@ -251,7 +255,7 @@ public struct VoxelMeshJob : IJob
                         if (newY >= sizeY) break;
                         for (int innerX = startX; innerX < endX; innerX++)
                         {
-                            if (!mask[innerX, newY])
+                            if (!mask[innerX + sizeX * newY])
                             {
                                 done = true;
                                 break;
@@ -263,7 +267,7 @@ public struct VoxelMeshJob : IJob
 
                     for (int innerX = startX; innerX < endX; innerX++)
                         for (int innerY = startY; innerY < endY; innerY++)
-                            mask[innerX, innerY] = false;
+                            mask[innerX + sizeX * innerY] = false;
 
                     int index = vertices.Length;
                     // l'arrière
@@ -286,24 +290,25 @@ public struct VoxelMeshJob : IJob
                 }
             }
         }
+        mask.Dispose();
     }
     private void GenerateRightFace()
     {
-        bool[,] mask = new bool[sizeZ, sizeY];
+        NativeArray<bool> mask = new (sizeZ * sizeY, Allocator.Temp);
         for (int x = 0; x < sizeX; x++)
         {
             for (int z = 0; z < sizeZ; z++)
                 for (int y = 0; y < sizeY; y++)
-                    mask[z, y] = IsFaceVisible(x, y, z, 1, 0, 0);
+                    mask[z + sizeZ * y] = IsFaceVisible(x, y, z, 1, 0, 0);
 
             for (int z = 0; z < sizeZ; z++)
             {
                 for (int y = 0; y < sizeY; y++)
                 {
-                    if (!mask[z, y]) continue;
+                    if (!mask[z + sizeZ * y]) continue;
                     int startZ = z, startY = y, endZ = z, endY = y;
 
-                    while (endZ < sizeZ && mask[endZ, endY]) endZ++;
+                    while (endZ < sizeZ && mask[endZ + sizeZ * endY]) endZ++;
 
                     bool done = false;
                     while (!done)
@@ -312,7 +317,7 @@ public struct VoxelMeshJob : IJob
                         if (newY >= sizeY) break;
                         for (int innerZ = startZ; innerZ < endZ; innerZ++)
                         {
-                            if (!mask[innerZ, newY])
+                            if (!mask[innerZ + sizeZ * newY])
                             {
                                 done = true;
                                 break;
@@ -324,7 +329,7 @@ public struct VoxelMeshJob : IJob
 
                     for (int innerZ = startZ; innerZ < endZ; innerZ++)
                         for (int innerY = startY; innerY < endY; innerY++)
-                            mask[innerZ, innerY] = false;
+                            mask[innerZ + sizeZ * innerY] = false;
 
                     int index = vertices.Length;
                     /// vue de droite
@@ -347,25 +352,26 @@ public struct VoxelMeshJob : IJob
                 }
             }
         }
+        mask.Dispose();
     }
 
     private void GenerateLeftFace()
     {
-        bool[,] mask = new bool[sizeZ, sizeY];
+        NativeArray<bool> mask = new(sizeZ * sizeY, Allocator.Temp);
         for (int x = 0; x < sizeX; x++)
         {
             for (int z = 0; z < sizeZ; z++)
                 for (int y = 0; y < sizeY; y++)
-                    mask[z, y] = IsFaceVisible(x, y, z, -1, 0, 0);
+                    mask[z + sizeZ * y] = IsFaceVisible(x, y, z, -1, 0, 0);
 
             for (int z = 0; z < sizeZ; z++)
             {
                 for (int y = 0; y < sizeY; y++)
                 {
-                    if (!mask[z, y]) continue;
+                    if (!mask[z + sizeZ * y]) continue;
                     int startZ = z, startY = y, endZ = z, endY = y;
 
-                    while (endZ < sizeZ && mask[endZ, endY]) endZ++;
+                    while (endZ < sizeZ && mask[endZ + sizeZ * endY]) endZ++;
 
                     bool done = false;
                     while (!done)
@@ -374,7 +380,7 @@ public struct VoxelMeshJob : IJob
                         if (newY >= sizeY) break;
                         for (int innerZ = startZ; innerZ < endZ; innerZ++)
                         {
-                            if (!mask[innerZ, newY])
+                            if (!mask[innerZ + sizeZ * newY])
                             {
                                 done = true;
                                 break;
@@ -386,7 +392,7 @@ public struct VoxelMeshJob : IJob
 
                     for (int innerZ = startZ; innerZ < endZ; innerZ++)
                         for (int innerY = startY; innerY < endY; innerY++)
-                            mask[innerZ, innerY] = false;
+                            mask[innerZ + sizeZ * innerY] = false;
 
                     int index = vertices.Length;
                     /// Vue de gauche
@@ -409,5 +415,7 @@ public struct VoxelMeshJob : IJob
                 }
             }
         }
+        mask.Dispose();
     }
+    
 }
