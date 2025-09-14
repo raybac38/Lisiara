@@ -27,7 +27,7 @@ public class MapData
     public const int MAP_SIZE_Y = 4;
     public const int MAP_SIZE_Z = 32;
 
-    private ChunkData[,,] loadedChunks;
+    private readonly ChunkData[,,] loadedChunks;
 
     public MapData()
     {
@@ -41,7 +41,6 @@ public class MapData
                     ChunkData chunkData = new(new(x, y, z));
                     loadedChunks[x, y, z] = chunkData;
                     chunkData.Generate();
-                    Console.WriteLine("chargement d'un chunk");
                 }
             }
         }
@@ -74,5 +73,13 @@ public class MapData
     }
 
     public ChunkData GetChunkData(int x, int y, int z) { return loadedChunks[x, y, z]; }
+
+    public void Dispose()
+    {
+        foreach (ChunkData chunk in loadedChunks)
+        {
+            chunk.Dispose();
+        }
+    }
 
 }

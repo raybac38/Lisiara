@@ -19,7 +19,7 @@ public class MapRenderer : MonoBehaviour
 
     private void Start()
     {
-        mapData = map.MapData;
+        mapData = map.mapData;
         chunkRenderers = new ChunkRenderer[MapData.MAP_SIZE_X, MapData.MAP_SIZE_Y, MapData.MAP_SIZE_Z];
         for (int x = 0; x < MapData.MAP_SIZE_X; x++)
         {

@@ -8,7 +8,7 @@ public class ChunkData
     private const float mapWaterLevel = 50f;
     private readonly Vector3Int chunkPosition;
 
-    public NativeArray<Voxel> voxels = new(MapData.CHUNK_SIZE_X * MapData.CHUNK_SIZE_Y * MapData.CHUNK_SIZE_Z, Allocator.Persistent);
+    public NativeArray<Voxel> voxels;
 
     private Voxel Get(int x, int y, int z)
     {
@@ -23,6 +23,7 @@ public class ChunkData
     public ChunkData(Vector3Int chunkPosition)
     {
         this.chunkPosition = chunkPosition;
+        voxels = new(MapData.CHUNK_SIZE_X * MapData.CHUNK_SIZE_Y * MapData.CHUNK_SIZE_Z, Allocator.Persistent);
     }
 
     private Vector3Int RelativeToAbsolutCoordinate(Vector3Int relative)
@@ -51,5 +52,14 @@ public class ChunkData
     public Voxel GetLocalVoxel(int x, int y, int z) {
 
         return Get(x, y, z);
+    }
+
+    /// <summary>
+    /// Free all used memory
+    /// </summary>
+    public void Dispose()
+    {
+        Debug.Log("Dispose");
+        voxels.Dispose();
     }
 }
