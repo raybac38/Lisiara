@@ -437,6 +437,7 @@ GameObject:
   - component: {fileID: 1094455383}
   - component: {fileID: 1094455385}
   - component: {fileID: 1094455384}
+  - component: {fileID: 1094455386}
   m_Layer: 0
   m_Name: Map
   m_TagString: Untagged
@@ -486,6 +487,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mapRenderer: {fileID: 1094455384}
+--- !u!114 &1094455386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1094455382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac6800fa581fb4741b9453bfaede08fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SettlerPrefab: {fileID: 5624080991396805792, guid: c62141d7907514c43af485d6d65b3ed0, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -2,15 +2,10 @@ using UnityEngine;
 
 public class Settler : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    public Settlement settlement;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public ITaskExecutor executor;
+   
+    
+
 }
