@@ -2,23 +2,22 @@ using UnityEngine;
 
 public interface ITask
 {
-  
+
+    public enum ExitStatus
+    {
+        FINISHED,   /// this task is finished
+        RUNNING,    /// this task is running (can be recall)
+        ERROR,      /// this task end in a error (a bug)
+        ABORTED     /// this task end with abort (a condition for this is not satified)
+    }
     /// <summary>
-    /// Execute the next step to the given settler
+    /// Execute the next step of the task on the given settler
     /// </summary>
     /// <param name="settler"></param>
-    public void NextStep(Settler settler);
+    public ExitStatus NextStep(Settler settler);
 
     /// <summary>
-    /// The task is aborted (canceled)
-    /// Maybe it need to be reposte
+    /// Abort the current task
     /// </summary>
     public void Abort();
-
-    /// <summary>
-    /// When the task finish or is aborted, where does the task need to be reposte ?
-    /// </summary>
-    /// <param name="taskManager"></param>
-    public void SetTaskManagerCallback(ITaskManager taskManager);
-    
 }

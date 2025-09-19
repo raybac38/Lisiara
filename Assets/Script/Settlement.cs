@@ -15,10 +15,16 @@ public class Settlement : MonoBehaviour
         Settler settler = settlerObject.GetComponent<Settler>();
         settler.executor = taskManager.CreateTaskExecutor();
         settler.settlement = this;
+
+        settler.SetGridPosition(MapData.mapData.GetRandomCoordinate());
     }
 
     public void Start()
     {
+        for (int i = 0; i < 100; i++)
+        {
+            taskManager.PostTask(new Wandering());
+        }
         AddNewSettler();
         AddNewSettler();
         AddNewSettler();

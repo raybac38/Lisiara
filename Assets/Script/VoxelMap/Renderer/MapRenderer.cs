@@ -19,6 +19,8 @@ public class MapRenderer : MonoBehaviour
 
     private void Start()
     {
+        GameObject chunks = new GameObject("Chunks");
+
         mapData = map.mapData;
         chunkRenderers = new ChunkRenderer[MapData.MAP_SIZE_X, MapData.MAP_SIZE_Y, MapData.MAP_SIZE_Z];
         for (int x = 0; x < MapData.MAP_SIZE_X; x++)
@@ -33,7 +35,7 @@ public class MapRenderer : MonoBehaviour
                     chunkRenderer.mapData = mapData;
                     chunkRenderer.chunkPosition = new Vector3Int(x, y, z);
                     chunk.transform.position = new Vector3(x * MapData.CHUNK_SIZE_X, y * MapData.CHUNK_SIZE_Y, z * MapData.CHUNK_SIZE_Z);
-                    
+                    chunk.transform.SetParent(chunks.transform);
                 }
             }
         }

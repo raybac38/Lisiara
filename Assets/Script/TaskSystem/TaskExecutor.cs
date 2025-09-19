@@ -26,10 +26,15 @@ public class TaskExecutor : ITaskExecutor
     {
         if(currentTask == null)
         {
-            Debug.LogError("Current task is null, cannot execute next step");
+            Debug.Log("Current task is null, cannot execute next step");
             return;
         }
-        currentTask.NextStep(settler);
+        ITask.ExitStatus exitStatus = currentTask.NextStep(settler);
+        if(exitStatus == ITask.ExitStatus.FINISHED)
+        {
+            currentTask = null;
+            taskManager.MarkAsIdle(this);
+        }
     }
 
     void ITaskExecutor.SetCurrentTask(ITask task)

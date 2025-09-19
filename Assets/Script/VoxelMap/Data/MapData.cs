@@ -1,5 +1,3 @@
-using System;
-using Unity.Burst;
 using UnityEngine;
 
 public class MapData
@@ -7,6 +5,9 @@ public class MapData
     /// <summary>
     /// CHUNK SIZE NEED TO BE A POWER OF 2 FOR EFFICIENCY PURPOSE
     /// </summary>
+    /// 
+    public static MapData mapData { get; private set; }
+    private BasicPathfiding basicPathfiding;
 
     public const int CHUNK_SIZE_X = 32;
     public const int CHUNK_SIZE_Y = 32;
@@ -20,12 +21,17 @@ public class MapData
     private const int CHUNK_MASK_Y = CHUNK_SIZE_Y - 1;
     private const int CHUNK_MASK_Z = CHUNK_SIZE_Z - 1;
 
-
     //static public readonly Vector3Int mapSize = new(32, 4, 32);
 
-    public const int MAP_SIZE_X = 32;
+    public const int MAP_SIZE_X = 16;
     public const int MAP_SIZE_Y = 4;
-    public const int MAP_SIZE_Z = 32;
+    public const int MAP_SIZE_Z = 16;
+
+    // shortcut
+
+    private const int VOXEL_MAP_SIZE_X = CHUNK_SIZE_X * MAP_SIZE_X;
+    private const int VOXEL_MAP_SIZE_Y = CHUNK_SIZE_Y * MAP_SIZE_Y;
+    private const int VOXEL_MAP_SIZE_Z = CHUNK_SIZE_Z * MAP_SIZE_Z;
 
     private readonly ChunkData[,,] loadedChunks;
 
@@ -44,6 +50,48 @@ public class MapData
                 }
             }
         }
+
+        basicPathfiding = new BasicPathfiding();
+        basicPathfiding.GeneratePathMap(this);
+        mapData = this;
+    }
+
+    /// <summary>
+    /// Return the surface level of a coordinate
+    /// </summary>
+    /// <param name="gridPosition"></param>
+    /// <returns></returns>
+    private int GetGroundLevel(Vector2Int gridPosition)
+    {
+        MapData map = MapData.mapData;
+        for (int i = VOXEL_MAP_SIZE_Y; i > 0; i--)
+        {
+            if (map.GetVoxelData(gridPosition.x, i, gridPosition.y).type != VoxelType.Air &&
+                map.GetVoxelData(gridPosition.x, i + 1, gridPosition.y).type == VoxelType.Air &&
+                map.GetVoxelData(gridPosition.x, i + 2, gridPosition.y).type == VoxelType.Air)
+            {
+                return i + 1;
+            }
+        }
+        return -1;
+    }
+
+
+    /// <summary>
+    /// Return a random coordinate of the surface of the map
+    /// </summary>
+    /// <returns></returns>
+    public Vector3Int GetRandomCoordinate()
+    {
+        Vector2Int destination = new(Random.Range(0, VOXEL_MAP_SIZE_X), Random.Range(0, VOXEL_MAP_SIZE_Z));
+        int groundLevel = GetGroundLevel(destination);
+
+        while (groundLevel == -1)
+        {
+            destination = new(Random.Range(0, VOXEL_MAP_SIZE_X), Random.Range(0, VOXEL_MAP_SIZE_Z));
+            groundLevel = GetGroundLevel(destination);
+        }
+        return new Vector3Int(destination.x, groundLevel, destination.y);
     }
 
     public Voxel GetVoxelData(int x, int y, int z)
@@ -64,7 +112,6 @@ public class MapData
         return loadedChunks[chunkX, chunkY, chunkZ]
             .GetLocalVoxel(localX, localY, localZ);
     }
-
 
     private bool IsOutside(int x, int y, int z)
     {

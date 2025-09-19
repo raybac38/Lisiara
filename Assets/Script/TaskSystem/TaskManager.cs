@@ -25,7 +25,6 @@ public class TaskManager : ITaskManager
 
     void ITaskManager.PostTask(ITask task)
     {
-        task.SetTaskManagerCallback(this);
         if (executors.Count > 0)
         {
             ITaskExecutor executor = executors[0];
